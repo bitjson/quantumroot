@@ -1,0 +1,82 @@
+{
+  "version": "0.2",
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/master/cspell.schema.json",
+  "language": "en",
+  "words": [
+    "altstack",
+    "bitauth",
+    "bitjson",
+    "CHECKDATASIG",
+    "CHECKSIG",
+    "coef",
+    "CRQCs",
+    "D_MESG",
+    "D_PBLC",
+    "DETACHEDSIGNATURE",
+    "Diffie",
+    "DRBG",
+    "Dreyzehner",
+    "EQUALVERIFY",
+    "FROMALTSTACK",
+    "GREATERTHANOREQUAL",
+    "IFDUP",
+    "INPUTBYTECODE",
+    "INPUTINDEX",
+    "Lamport",
+    "libauth",
+    "LMOTS",
+    "LSHIFTNUM",
+    "malleated",
+    "malleation",
+    "Merkle",
+    "merklized",
+    "Micali",
+    "NOTIF",
+    "NUMNOTEQUAL",
+    "NUMS",
+    "OUTPOINTINDEX",
+    "OUTPOINTTXHASH",
+    "OUTPUTBYTECODE",
+    "OUTPUTTOKENAMOUNT",
+    "OUTPUTTOKENCATEGORY",
+    "OUTPUTTOKENCOMMITMENT",
+    "OUTPUTVALUE",
+    "preimage",
+    "preimages",
+    "Quantumroot",
+    "REVERSEBYTES",
+    "RSHIFTBIN",
+    "Satoshis",
+    "Schnorr",
+    "SIGHASH",
+    "TOALTSTACK",
+    "trailofbits",
+    "TXINPUTCOUNT",
+    "TXOUTPUTCOUNT",
+    "UTXO",
+    "UTXOBYTECODE",
+    "UTXOs",
+    "UTXOTOKENCATEGORY",
+    "Winternitz"
+  ],
+  "flagWords": [],
+  "ignorePaths": [
+    "./cspell.json"
+  ],
+  "patterns": [
+    {
+      "name": "cash-address-format",
+      "pattern": "/:[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+/g"
+    },
+    {
+      "name": "secret-key-format",
+      "pattern": "/secret-key:[-qpzry9x8gf2tvdw0s3jn54khce6mua7l]+/g"
+    }
+  ],
+  "ignoreRegExpList": [
+    "Base64",
+    "HexValues",
+    "cash-address-format",
+    "secret-key-format"
+  ]
+}

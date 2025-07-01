@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "@bitauth/libauth": "^3.1.0-next.6"
+  },
+  "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72",
+  "name": "quantumroot",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "fast-check": "^4.1.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,1294 @@
+{
+  "$schema": "https://libauth.org/schemas/wallet-template-v0.schema.json",
+  "description": "Quantumroot is a quantum-secure Taproot.\n\nThis Bitcoin Cash vault design offers full 256-bit classical, 128-bit post-quantum security strength. Quantum spends for less than $0.01, and – using cross-input and CashToken-based aggregation – post-quantum sweeps of 500+ addresses cost less than $0.10.\n\nRead the full explanation here: https://blog.bitjson.com/quantumroot",
+  "name": "Quantumroot Schnorr + LM-OTS Vault",
+  "entities": {
+    "owner": {
+      "description": "The individual who can spend from this vault. The owner has two kinds of addresses: \"Receive Address\" and \"Quantum Lock\". \n\nThe vault should expose \"Receive Address\" externally, and \"Quantum Lock\" only holds authorized tokens in one-time-use addresses, rotated for every spend. \n\nReal contacts won't ever see the \"Quantum Lock\" address until it's out of use, so the only way it could receive unexpected funds is via dusting or other intentional misuse. Still, it's efficient to sweep such dust (via the Quantum Lock's introspection unlock), and it's possible even to re-spend from Quantum Lock a new transaction – each transaction just shares more of that particular private key. (Again, not a problem for the vaults actual assets, only relevant for irregular \"clean up\" e.g. taking any meaningful amounts of dust and running them right through a privacy system.)",
+      "name": "Owner",
+      "scripts": ["receive_address", "quantum_lock"],
+      "variables": {
+        "identifier_source": {
+          "description": "A hardened derivation HD key path used as input to the LMS key identifier (RFC 8554's \"I\").",
+          "name": "Identifier Source",
+          "type": "HdKey"
+        },
+        "key": {
+          "description": "The hardened HD key path used by the vault's Schnorr spending path.",
+          "name": "Key",
+          "type": "HdKey"
+        },
+        "leaf_spend_index": {
+          "description": "The input index of the leaf spend being used as proof for this introspection spend.",
+          "name": "Leaf Spend Index",
+          "type": "AddressData"
+        },
+        "nonce_source": {
+          "description": "A hardened derivation HD key path used as input to the message randomizer (RFC 8554's \"C\").",
+          "name": "Nonce Source",
+          "type": "HdKey"
+        },
+        "quantum_private_key_source": {
+          "description": "A hardened derivation HD key path used as input to the key generation function. The derived public key is used as source entropy to produce the quantum private key that controls the vault. \n\nNote: CashAssembly does not currently expose a private key dumping function; instead, this unique key-path public key is used as a private key by the template.",
+          "name": "Quantum Private Key Source",
+          "type": "HdKey"
+        },
+        "quantum_spend_index": {
+          "description": "The input index of the quantum spend being used as proof for this introspection spend.",
+          "name": "Quantum Spend Index",
+          "type": "AddressData"
+        },
+        "token_spend_index": {
+          "description": "The input index of the authorized token being spent as proof for this token spend.",
+          "name": "Token Spend Index",
+          "type": "AddressData"
+        },
+        "vault_token_category": {
+          "description": "The token category of the token(s) authorized to sweep receive addresses via the Token Spend path.",
+          "name": "Vault Token Category",
+          "type": "AddressData"
+        }
+      }
+    }
+  },
+  "scenarios": {
+    "aggregated_spend_slot_0": {
+      "description": "The aggregated spend scenario with UTXO/input 0 marked as the 'slot'.",
+      "extends": "base",
+      "name": "Aggregated Spend",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": ["slot"]
+          },
+          {
+            "unlockingBytecode": {
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "quantum_lock_introspection_unlock"
+            }
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": ["slot"],
+          "token": {
+            "category": "efbe0000000000000000000000000000000000000000000000000000000000efbe"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          }
+        }
+      ]
+    },
+    "aggregated_spend_slot_1": {
+      "description": "The aggregated spend scenario with UTXO/input 1 marked as the 'slot'.",
+      "extends": "base",
+      "name": "Aggregated Spend",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": {
+              "script": "quantum_unlock"
+            }
+          },
+          {
+            "unlockingBytecode": ["slot"]
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "quantum_lock_introspection_unlock"
+            }
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          },
+          "token": {
+            "category": "efbe0000000000000000000000000000000000000000000000000000000000efbe"
+          }
+        },
+        {
+          "lockingBytecode": ["slot"]
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          }
+        }
+      ]
+    },
+    "aggregated_spend_slot_2": {
+      "description": "The aggregated spend scenario with UTXO/input 2 marked as the 'slot'. (Also some deeper changes since its easier to leave address index 0 to the slot.)",
+      "extends": "base",
+      "name": "Aggregated Spend",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": {
+              "script": "quantum_unlock"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": ["slot"]
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "1"
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "1"
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "quantum_lock_introspection_unlock"
+            }
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          },
+          "token": {
+            "category": "efbe0000000000000000000000000000000000000000000000000000000000efbe"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": ["slot"]
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          }
+        }
+      ]
+    },
+    "aggregated_spend_slot_3": {
+      "description": "The aggregated spend scenario with UTXO/input 3 marked as the 'slot'.",
+      "extends": "base",
+      "name": "Aggregated Spend",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": {
+              "script": "quantum_unlock"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": ["slot"]
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "quantum_lock_introspection_unlock"
+            }
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          },
+          "token": {
+            "category": "efbe0000000000000000000000000000000000000000000000000000000000efbe"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": ["slot"]
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          }
+        }
+      ]
+    },
+    "aggregated_spend_slot_8": {
+      "description": "The aggregated spend scenario with UTXO/input 8 marked as the 'slot'.",
+      "extends": "base",
+      "name": "Aggregated Spend",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": {
+              "script": "quantum_unlock"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": ["slot"]
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          },
+          "token": {
+            "category": "efbe0000000000000000000000000000000000000000000000000000000000efbe"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": ["slot"]
+        }
+      ]
+    },
+    "base": {
+      "data": {
+        "bytecode": {
+          "leaf_spend_index": "1",
+          "quantum_spend_index": "0",
+          "token_spend_index": "0",
+          "vault_token_category": "0xbeef0000000000000000000000000000000000000000000000000000000000beef"
+        }
+      },
+      "description": "Just deduplicates some data until Bitauth IDE supports action-based scenarios.",
+      "name": "Base"
+    },
+    "paired_bypass_attempt_quantum_lock": {
+      "data": {
+        "bytecode": {
+          "quantum_spend_index": "0"
+        }
+      },
+      "description": "",
+      "extends": "base",
+      "name": "Paired Bypass Attempt (Quantum Lock)",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "1"
+                }
+              },
+              "script": "quantum_lock_introspection_unlock"
+            }
+          },
+          {
+            "unlockingBytecode": ["slot"]
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "bytecode": {
+                "leaf_spend_index": "1"
+              }
+            },
+            "script": "quantum_lock"
+          }
+        },
+        {
+          "lockingBytecode": ["slot"]
+        }
+      ]
+    },
+    "paired_bypass_attempt_receive_address": {
+      "data": {
+        "bytecode": {
+          "leaf_spend_index": "0"
+        }
+      },
+      "description": "",
+      "extends": "base",
+      "name": "Paired Bypass Attempt (Receive Address)",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "1"
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": ["slot"]
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "bytecode": {
+                "leaf_spend_index": "2"
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": ["slot"]
+        }
+      ]
+    },
+    "post_quantum_aggregated_spend_reference": {
+      "description": "The canonical 'post-quantum aggregated spend' scenario, not actually used, just here to copy/paste. The next version of Libauth's engine won't require slots in scenarios. For now, we have to copy/paste and mark the slots.",
+      "extends": "base",
+      "name": "Aggregated Spend",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": {
+              "script": "quantum_unlock"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "token_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "overrides": {
+                "bytecode": {
+                  "leaf_spend_index": "2"
+                },
+                "hdKeys": {
+                  "addressIndex": 13
+                }
+              },
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "quantum_lock_introspection_unlock"
+            }
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          },
+          "token": {
+            "category": "efbe0000000000000000000000000000000000000000000000000000000000efbe"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "overrides": {
+              "hdKeys": {
+                "addressIndex": 13
+              }
+            },
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "quantum_lock"
+          }
+        }
+      ]
+    },
+    "pre_quantum_aggregated_spend": {
+      "data": {
+        "bytecode": {
+          "leaf_spend_index": "0"
+        }
+      },
+      "description": "The pre-quantum aggregated spend scenario with UTXO/input 0 marked as the 'slot'.",
+      "extends": "base",
+      "name": "Pre-Quantum Aggregated Spend",
+      "transaction": {
+        "inputs": [
+          {
+            "unlockingBytecode": ["slot"]
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          },
+          {
+            "unlockingBytecode": {
+              "script": "introspection_spend"
+            }
+          }
+        ]
+      },
+      "sourceOutputs": [
+        {
+          "lockingBytecode": ["slot"]
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        },
+        {
+          "lockingBytecode": {
+            "script": "receive_address"
+          }
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "commit_transaction_shape": {
+      "name": "Commit Transaction Shape",
+      "script": "/**\n * No additional unlocking bytecode is necessary.\n * \n * The locking bytecode uses introspection to produce\n * a signing serialization for the transaction, hashes\n * it, then checks that the hash matches the one expected\n * by the signing wallet. \n * \n * Critically, direct introspection opcodes ensure\n * post-quantum security by allowing the transaction's\n * \"preimage\" to be inspected without reliance on\n * elliptic-curve cryptography as would be required\n * by the \"OP_CHECKSIG + OP_CHECKDATASIG trick\".\n * \n * As a result, any element of the transaction's shape\n * which is inspected and verified by this locking script\n * **cannot be malleated**, even by fast quantum attackers,\n * while the transaction is waiting to be mined in a block.\n */",
+      "unlocks": "quantum_lock_verify_transaction_shape"
+    },
+    "introspection_spend": {
+      "passes": ["aggregated_spend_slot_3"],
+      "name": "Introspection Spend",
+      "script": "/**\n * The Aggregated Spend scenario spends 8 inputs:\n *  - Input 0: the \"master\" token spend and quantum signature (Address Q)\n *  - Input 1: a leaf spend of Address A\n *  - Input 2: a leaf spend of Address B\n *  - Inputs 3 and 4: introspection spends of Address A\n *  - Inputs 5 and 6: introspection spends of Address B\n *  - Input 7: introspection spend of Address Q\n * \n * This particular unlock is used by Input 3: an introspection spend of\n * Address A. To do so requires pointing at input 1, a valid leaf spend\n * of Address A.\n */\n<leaf_spend_index>",
+      "unlocks": "receive_address"
+    },
+    "quantum_lock_introspection_unlock": {
+      "passes": ["aggregated_spend_slot_8"],
+      "name": "Introspection Unlock",
+      "script": "<quantum_spend_index>",
+      "unlocks": "quantum_lock"
+    },
+    "quantum_unlock": {
+      "passes": ["aggregated_spend_slot_0"],
+      "name": "Quantum Unlock",
+      "script": "OP_1NEGATE // -1 proves (to sibling inputs) that this is a leaf spend \n<$(quantum_signature)> // [[ quantum_signature ]]\n<$(quantum_key_identifier)> // [[ I ]]\n<0> // [[ q ]] is always 0 for privacy (retained for RFC compatibility)\n<$(quantum_message_randomizer)> //  [[ C ]]\n<$(quantum_signed_message)> // [[ quantum_signed_message ]]",
+      "unlocks": "quantum_lock"
+    },
+    "reject_bypass_attempt_quantum_lock": {
+      "fails": ["paired_bypass_attempt_quantum_lock"],
+      "name": "Reject: Bypass Attempt (Quantum Lock)",
+      "script": "/**\n * This unlock demonstrates that the locking script isn't vulnerable\n * to a potential bypass. \n * \n * For details, see \"Reject: Bypass Attempt (Receive Address)\".\n */\n<quantum_spend_index>",
+      "unlocks": "quantum_lock"
+    },
+    "reject_bypass_attempt_receive_address": {
+      "fails": ["paired_bypass_attempt_receive_address"],
+      "name": "Reject: Bypass Attempt (Receive Address)",
+      "script": "/**\n * This unlock demonstrates that the locking script isn't vulnerable\n * to a potential bypass: in addition to checking that a matching \n * sibling input exists, we need to check that it's being validated\n * via a \"leaf\" spending path. Otherwise, 2+ such UTXOs may be spent\n * via the introspection path by only pointing at each other, with no\n * \"real\" proof provided in any input.\n * \n * The \"Paired Bypass Attempt\" scenario tries this: the transaction\n * includes two inputs which each attempts to point to the other to\n * prove an introspection spend.\n */\n<leaf_spend_index>",
+      "unlocks": "receive_address"
+    },
+    "schnorr_spend": {
+      "passes": ["pre_quantum_aggregated_spend"],
+      "name": "Schnorr Spend (Leaf A)",
+      "script": "/**\n * \"Pre-Quantum Aggregated Spend\" includes 20 inputs:\n * \n * - Input 0: a schnorr spend of Address A\n * - Input 1 through 19: introspection spends of Address A\n * \n * This unlock is used by Input 0: a leaf spend of\n * Address A using the Schnorr path.\n */\nOP_1NEGATE // -1 proves (to sibling inputs) that this is a leaf spend \nschnorr_unlock\n<0> // 0 for leaf A, 1 for leaf B [[ leaf_index ]]\n<$(<receive_address_token_spend> OP_HASH256)> // other leaf hash: [[ sibling_leaf_hash ]]\n<receive_address_schnorr_spend> // [[ this_leaf ]]",
+      "unlocks": "receive_address"
+    },
+    "schnorr_unlock": {
+      "name": "Schnorr Unlock",
+      "script": "<key.schnorr_signature.default>",
+      "unlocks": "receive_address_schnorr_spend"
+    },
+    "token_spend": {
+      "passes": ["aggregated_spend_slot_2"],
+      "name": "Token Spend (Leaf B)",
+      "script": "OP_1NEGATE // -1 proves this is a leaf spend to sibling inputs\ntoken_unlock\n<1> // 0 for leaf A, 1 for leaf B [[ use_leaf_B ]]\n<$(<receive_address_schnorr_spend> OP_HASH256)> // other leaf hash: [[ sibling_leaf_hash ]]\n<receive_address_token_spend>",
+      "unlocks": "receive_address"
+    },
+    "token_unlock": {
+      "passes": ["aggregated_spend_slot_3"],
+      "name": "Token Unlock",
+      "script": "<token_spend_index>",
+      "unlocks": "receive_address_token_spend"
+    },
+    "quantum_lock": {
+      "lockingType": "p2sh32",
+      "name": "Quantum Lock",
+      "script": "/**\n * An implementation of Leighton-Micali One-Time Signatures\n * (LM-OTS), the Leighton and Micali adaptation of the original\n * Lamport-Diffie-Winternitz-Merkle one-time signature as\n * specified by RFC 8554 and recommended by NIST SP 800-208.\n *\n * Note that the quantum signature simply signs the hash of a\n * script to be executed if the signature can be verified. This\n * allows the transaction's \"signing serialization algorithm\"\n * to be upgraded (by the wallet) without moving funds. \n * \n * The signed script includes both the instruction for checking\n * the transaction and commitment(s) to the expected values.\n * \n * This approach maximizes the vault's flexibility: vault UTXOs\n * which have been dormant for decades can be offline-upgraded\n * to employ the latest VM bytecode operations in verifying the\n * signed transaction's shape. If new kinds of primitives\n * (e.g. CashTokens) or more efficient serialization opcodes\n * (e.g. OP_DETACHEDSIGNATURE) are introduced, wallets can be\n * seamlessly-upgraded to use them without moving any UTXOs.\n * \n * Note this quantum lock also allows itself to be swept via\n * an introspection spend: if the address somehow accumulates\n * multiple UTXOs (i.e. dusting or unsolicited airdrops), they\n * can all be cheaply spent at the same time (just one quantum\n * signature), and the user doesn't have to sweep or reveal the\n * connection to any of the vault's real receive addresses (which\n * themselves support aggregation, too).\n */\nOP_DEPTH\nOP_1SUB\nOP_IFDUP\nOP_IF\n   /**\n   * Attempting leaf spend: verify that the pushed bytecode\n   * and sibling leaf match the quantumroot, then execute.\n   */\n  OP_ROLL // [[ leaf_spend_indicator ]] should be -1\n  OP_NEGATE // [[ should_be_1 ]] validated by negating + defining, then invoking 1\n  OP_2DUP // *[ ... quantum_signed_message, should_be_1 ]*\n  OP_DEFINE // Not evaluating yet, just saving as a function.\n  OP_DROP // No need to check, we verify by invoking <1>. (And OP_VERIFY wouldn't prevent malleability.)\n  /**\n   * Perform a quantum \"CHECKDATASIG\":\n   */\n  lm-ots_derive_key_candidate // Fails on invalid quantum_signature\n  <$(quantum_public_key)> // [[quantum_public_key]]\n  OP_EQUALVERIFY\n  /**\n   * The quantum signature was valid, evaluate the signed message:\n   * a simple script to inspect the transaction and verify it\n   * hasn't been tampered with prior to inclusion in a block.\n   */\n  <1> // *[ should_be_1 ]*\n  OP_INVOKE\nOP_ELSE\n  /**\n   * Attempting introspection spend: verify that the indicated\n   * input contains a matching quantum spend.\n   */\n  OP_DUP\n  /**\n   * Note that by directly using leaf_spend_index as an introspection\n   * index, we implicitly prevent introspection spends from 1) numeric\n   * malleability, and 2) having OP_1NEGATE as a first byte. Further,\n   * because we're not using a valid input index (like `0` or `1`),\n   * introspection spends are allowed to point to a matching quantum\n   * spend in practically any input.\n   */\n  OP_UTXOBYTECODE\n  OP_INPUTINDEX OP_UTXOBYTECODE OP_EQUALVERIFY\n  OP_INPUTBYTECODE // [-[ input_of_claimed_leaf_spend ]]\n  <1> OP_SPLIT OP_DROP // Only leaf spends may be prefixed with OP_1NEGATE.\n  <OP_1NEGATE> OP_EQUAL // If successful, proves a matching leaf spend.\nOP_ENDIF"
+    },
+    "quantum_lock_verify_transaction_shape": {
+      "lockingType": "p2sh20",
+      "name": "Quantum Lock: Verify Transaction Shape",
+      "script": "quantum_lock_serialize_transaction \nOP_HASH256\n<$(\n    quantum_lock_serialize_transaction \n    OP_HASH256\n)>\nOP_EQUAL /* Script uses internally-evaluated introspection. Definition is supported, but debugging support isn't yet deployed Bitauth IDE. Until then, preimages won't match: */ OP_NOT\n"
+    },
+    "receive_address": {
+      "lockingType": "p2sh32",
+      "name": "Receive Address",
+      "script": "/**\n * - Introspection Spend: accepts a number <N>, i.e. \"check\n *   input index N for a matching leaf spend\". The contract then\n *   enforces that only leaf spends may be prefixed with OP_1NEGATE\n *   (negative one), such that the prefix proves its a leaf spend.\n * \n * - Leaf Spend: every transaction must have at least one leaf spend.\n *   The leaf spend branch accepts a script to execute, the data needed\n *   to prove that the script is part of the quantumroot hash, and\n *   any additional data the executed script needs.\n * \n * Note that we could save some bytes by allowing some malleability,\n * but this implementation considers a few bytes per input to be\n * reasonable for minimizing unexpected behavior in the short term.\n * \n * In the longer term, an upgrade like TXv5 would allow wallets to\n * trim out the malleability protection without enabling malleability\n * (detached data/signatures comprehensively prevent malleability).\n * \n * Additionally, non-push unlocking bytecode would allow aggregated\n * spends to introspect and evaluate the entire INPUTBYTECODE of a\n * matching aggregated spend, trimming their length to just a few\n * bytes, esp. by deduplicating the redeem bytecode. (The aggregated\n * spending path would remain useful: operation cost budget is\n * allocated based in input bytecode length, so a fast/efficient path\n * is more likely to weigh-in under the VM limits than naively\n * re-executing expensive proofs.)\n */\nOP_DEPTH\nOP_1SUB\nOP_IFDUP\nOP_IF // CashVM's OP_IF accepts any non-zero value, so leaf spends can use the whole stack\n   /**\n   * Attempting leaf spend: verify that the pushed bytecode\n   * and sibling leaf match the quantumroot, then execute.\n   */\n  OP_ROLL // [[ leaf_spend_indicator ]] should be -1\n  OP_NEGATE // [[ should_be_1 ]] validated by negating + defining, then invoking 1\n  OP_2DUP // *[ ... this_leaf, should_be_1 ]*\n  OP_DEFINE // Not evaluating yet, just saving as a function.\n  OP_DROP // No need to check, we verify by invoking <1>. (And OP_VERIFY wouldn't prevent malleability.)\n  OP_HASH256 // [[ this_leaf_hash ]]\n  OP_ROT // *[sibling_leaf_hash, this_leaf, this_leaf_is_A]*\n  OP_DUP OP_SIZE OP_EQUALVERIFY // Delete these 3 bytes if leaf-spend malleability is acceptable or otherwise prevented\n  OP_NOTIF\n    OP_SWAP\n  OP_ENDIF\n  OP_CAT\n  OP_HASH256\n  <$(\n    <receive_address_schnorr_spend> OP_HASH256 // [[ leaf_A_hash ]]\n    <receive_address_token_spend> OP_HASH256 // [[ leaf_B_hash ]]\n    OP_CAT OP_HASH256 \n    )> // [[ quantumroot ]]\n  OP_EQUALVERIFY // Confirmed match, just execute:\n  <1> // *[ should_be_1 ]*\n  OP_INVOKE\nOP_ELSE\n  /**\n   * Attempting introspection spend: verify that the indicated\n   * input contains a matching leaf spend.\n   */\n  OP_DUP\n  /**\n   * Note that by directly using leaf_spend_index as an introspection\n   * index, we implicitly prevent introspection spends from 1) numeric\n   * malleability, and 2) having OP_1NEGATE as a first byte. Further,\n   * because we're not using a valid input index (like `0` or `1`),\n   * introspection spends are allowed to point to a matching leaf spend\n   * in practically any input.\n   */\n  OP_UTXOBYTECODE\n  OP_INPUTINDEX OP_UTXOBYTECODE OP_EQUALVERIFY\n  OP_INPUTBYTECODE // [-[ input_of_claimed_leaf_spend ]]\n  <1> OP_SPLIT OP_DROP // Only leaf spends may be prefixed with OP_1NEGATE.\n  <OP_1NEGATE> OP_EQUAL // If successful, proves a matching leaf spend.\nOP_ENDIF"
+    },
+    "receive_address_schnorr_spend": {
+      "lockingType": "standard",
+      "name": "Receive Address: Schnorr Spend",
+      "script": "/**\n * The single-signature spending path, hashed into the\n * first leaf of this vault's \"quantumroot\". \n * \n *                     root\n *                    /    \\\n * You are here. --> A      B\n * \n * Note that unlike token spends, no \"privacy nonce\" is\n * necessary for Schnorr-based spends, as the public key\n * already serves as a nonce (hardened HD keys cannot be\n * associated, even by quantum adversaries.)\n * \n * See \"Receive Address: Token Spend\" for details.\n */\n<key.public_key>\nOP_CHECKSIG"
+    },
+    "receive_address_token_spend": {
+      "lockingType": "standard",
+      "name": "Receive Address: Token Spend",
+      "script": "/**\n * The token-based spending path, hashed into the second leaf of this\n * vault's \"quantumroot\":\n * \n *        root\n *       /    \\\n *      A      B <-- You are here.\n * \n * Note that this Schnorr + LM-OTS Vault only uses two leaves, but any\n * kind of tree can be encoded in the quantumroot, e.g. a 3-leaf tree\n * could accept another sibling hash at this level and execute either\n * committed script:\n * \n *        root\n *       /    \\\n *      A    (BC)\n *           /  \\ \n *          B    C \n */\n\n/**\n * This nonce prevents chain analyzers from exhaustively iterating over\n * all CashTokens in the UTXO set to identify connections between\n * Schnorr-spent Quantumroot outputs and vault NFTs. The connection\n * is only revealed for the address(es) swept in a quantum spend (even\n * for quantum adversaries).\n * \n * Note that the nonce isn't revealed – and therefore does not increase\n * transaction sizes – unless the UTXO is being spent via a cross-address\n * CashToken spend; in this vault, the quantum spend.\n * \n * Even during CashToken-based spends, other UTXOs of the same address do\n * not have to duplicate this nonce across additional inputs: the nonce\n * only needs to be provided for one leaf-spent input, and all other UTXOs\n * with a matching address can use the leaner introspection-based spend.\n */\n<$(<nonce_source.public_key> OP_HASH256 )> // [[ address_privacy_nonce ]]\nOP_DROP\n\n/**\n * Here's where the actual validation begins: check that the provided\n * input index has the expected token category (to which we delegated\n * authorization). If the transaction proves it can spend that token,\n * we're done here.\n */\nOP_UTXOTOKENCATEGORY\n<vault_token_category>\nOP_EQUAL\n\n/**\n * Note how trivially we can construct more advanced schemes: quantum\n * multi-signature or time-based, pre-authorization, or\n * delegation-based fallbacks, etc. \n * \n * For example, here's how we'd bump this vault up to a\n * 3-of-3 quantum multi-signature (36 bytes per signer):\n * \n * OP_UTXOTOKENCATEGORY <vault_token_category2> OP_EQUALVERIFY\n * OP_UTXOTOKENCATEGORY <vault_token_category3> OP_EQUALVERIFY\n * \n * Efficient aggregation remains supported (sweeping from any number\n * of addresses), and it's even possible to sweep fund from multiple\n * kinds of unrelated vaults using a single signature.\n * \n * For example, a single transaction could aggregate sweeps from both\n * a single-signature quantum vault and 3-of-3 quantum vault, where\n * the single-signer is one of the three 3-of-3 signers. (While this\n * leaks the relationship at spend time, differing privacy nonces\n * could safely hide the relationship \"at rest\" – even from the other\n * two 3-of-3 signers, and even if equipped with a cryptographically\n * relevant quantum computer; they'd discover the connection only\n * if/when the single-signer includes it in a transaction. Such\n * at-rest privacy is highly valuable for the operational security of\n * vaulting systems.\n */"
+    },
+    "quantum_key_identifier": {
+      "name": "Template: Quantum Key Identifier",
+      "script": "/**\n * A small wrapper to correctly use the private key\n * generation script in multiple places. Usage:\n * <$(quantum_key_identifier)>\n */\n<$(\nlm-ots_key_identifier // [[ identifier_I ]]\n)> // [[ quantum_key_identifier ]]"
+    },
+    "quantum_message_randomizer": {
+      "name": "Template: Quantum Message Randomizer",
+      "script": "/**\n * A small wrapper to correctly use the message\n * randomizer script in multiple places. Usage:\n * <$(quantum_message_randomizer)>\n */\n<$(\nlm-ots_message_randomizer // [[ message_randomizer_C ]]\n)> // [[ message_randomizer_C ]]\n"
+    },
+    "quantum_private_key": {
+      "name": "Template: Quantum Private Key",
+      "script": "/**\n * A small wrapper to correctly use the private key\n * generation script in multiple places. Usage:\n * <$(quantum_private_key)>\n */\n<$(\nlm-ots_key_identifier // [[ identifier_I ]]\n/**\n * Note that \"q\" is standardized for the LMS N-time\n * signature scheme. For privacy, this vault uses a new seed\n * for every UTXO. As such, \"q\" is always set to `0`.\n */\n<0> // [[ leaf_index_q ]]\n/**\n * CashAssembly does not currently expose a private key dumping\n * compiler operation. Instead, the hashed public key of this\n * unique, hardened key-path is used as a seed by the template.\n */\n<$( <quantum_private_key_source.public_key OP_HASH256> )> //  [[ seed ]]\n\n// input: <I> <q> <seed>\nlm-ots_private_key \n)> // [[quantum_private_key]]"
+    },
+    "quantum_public_key": {
+      "name": "Template: Quantum Public Key",
+      "script": "/**\n * A small wrapper to correctly use the public key\n * derivation script in multiple places. Usage:\n * <$(quantum_public_key)>\n */\n<$(\nquantum_private_key // [[ quantum_private_key ]]\nlm-ots_key_identifier // [[ identifier_I ]]\n/**\n * Note that \"q\" is standardized for the LMS N-time\n * signature scheme. For privacy, this vault uses a new seed\n * for every UTXO. As such, \"q\" is always set to `0`.\n */\n<0> // [[ leaf_index_q ]]\n// input: <seed> <I> <q>\n<> // [[ IDE_hack_placeholder ]] not needed in real wallets\nlm-ots_public_key\n)> // [[ quantum_public_key ]]"
+    },
+    "quantum_signature": {
+      "name": "Template: Quantum Signature",
+      "script": "/**\n * A small wrapper to correctly use the signature\n * generation script in multiple places. Usage:\n * <$(quantum_signature)>\n */\n<$(\n<$(quantum_private_key)> // [[ quantum_private_key ]]\nlm-ots_key_identifier // [[ identifier_I ]]\n/**\n * Note that \"q\" is standardized for the LMS N-time\n * signature scheme. For privacy, this vault uses a new seed\n * for every UTXO. As such, \"q\" is always set to `0`.\n */\n<0> // [[ leaf_index_q ]]\nlm-ots_message_randomizer // [[ message_randomizer_C ]]\n/**\n * In this vault, the message to be signed is itself\n * a script: `quantum_lock_verify_transaction_shape`.\n */\n<quantum_lock_verify_transaction_shape> // [[ message ]]\n// Expected input: <x> <message> <I> <q> <C>\nlm-ots_sign\n)> // [[ quantum_signature ]]\n"
+    },
+    "quantum_signed_message": {
+      "name": "Template: Quantum Signed Message",
+      "script": "/**\n * A small wrapper to correctly use the signature\n * generation script in multiple places. Usage:\n * <$(quantum_signed_message)>\n */\n<$(\n/**\n * In this vault, the message to be signed is itself\n * a script: `quantum_lock_verify_transaction_shape`.\n */\n<quantum_lock_verify_transaction_shape> // [[ message ]]\n)> // [[ quantum_signed_message ]]\n"
+    },
+    "lm-ots_checksum": {
+      "name": "LM-OTS Checksum",
+      "script": "/**\n * Compute checksum for w=4 (fixed; n=32, u=64, v=3, p=67, ls=4).\n * \n * This sub-script is used both offline and on-chain, so\n * byte-length optimization is critical.\n * \n * Note that this approach is optimized for w=4 in CashAssembly vs.\n * the parameterized C-style implementation in RFC 8554. Looping\n * backwards saves a byte or two, the coefficient extraction\n * (\"coef\") function is inlined, and all constants are baked in.\n * \n * (This sub-script is also tested with fast-check in the repo.)\n */\nOP_SIZE // Could be \"<32>\", but OP_SIZE saves a byte.\n<> // [[ sum_slot ]]\nOP_TOALTSTACK\nOP_BEGIN\n    OP_1SUB \n    OP_SWAP\n    OP_OVER\n    OP_SPLIT // [[ last_byte ]]\n    <30>\n    OP_OVER\n    <4> OP_RSHIFTBIN OP_BIN2NUM // [[ upper_nibble ]]\n    OP_SUB\n    OP_SWAP\n    <0x0f> OP_AND OP_BIN2NUM // [[ lower_nibble ]]\n    OP_SUB\n    OP_FROMALTSTACK\n    OP_ADD\n    OP_TOALTSTACK\n    OP_SWAP\n    OP_IFDUP\n    OP_NOT\nOP_UNTIL OP_DROP\nOP_FROMALTSTACK\n<4> OP_LSHIFTNUM",
+      "tests": {
+        "test_checksum": {
+          "check": "<4096>\nOP_EQUAL",
+          "name": "Test Checksum",
+          "setup": "<0xfffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0> // Q"
+        }
+      }
+    },
+    "lm-ots_derive_key_candidate": {
+      "name": "LM-OTS Derive Key Candidate",
+      "script": "/**\n * An implementation of Leighton-Micali One-Time Signatures\n * (LM-OTS), the Leighton and Micali adaptation of the original\n * Lamport-Diffie-Winternitz-Merkle one-time signature as\n * specified by RFC 8554 and recommended by NIST SP 800-208.\n * \n * This script derives a key candidate from an LM-OTS signature.\n * It's evaluated on chain, so byte-length optimization is critical.\n * \n * Note that this approach is optimized for w=4 in CashAssembly vs.\n * the parameterized C-style implementation in RFC 8554. The\n * coefficient extraction (\"coef\") function is inlined, and all\n * constants are baked in.\n * \n * (This sub-script is also tested with fast-check in the repo.)\n * \n * Expected stack: *[ Y, I, q, C, message ]*\n */\nOP_TOALTSTACK\nOP_SIZE <32> OP_EQUALVERIFY // Require a valid message randomizer\nOP_TOALTSTACK\n<4> OP_NUM2BIN // [[padded_q]]\nOP_CAT // Prepared prefix: [[ I_and_q ]]\n\nOP_DUP\n<0x8181> // [[ D_MESG ]]\nOP_FROMALTSTACK\nOP_FROMALTSTACK\nOP_CAT OP_CAT OP_CAT // [[ message_preimage ]]\nOP_SHA256 // the message hash to be signed: [[ Q ]]\nOP_DUP\nlm-ots_checksum // [[ checksum ]]\n<\n    <2> OP_NUM2BIN OP_REVERSEBYTES // (big-endian for RFC 8554)\n    OP_CAT\n> <0x0c> // [[ u16str_cat, f_u16str_cat ]]\nOP_DEFINE\n<0x0c> OP_INVOKE // [[ encoded_message_hash ]]\nOP_TOALTSTACK\nOP_SWAP\nOP_TOALTSTACK\n<\n    /**\n     * Input:  *[ ... I_and_q, i, j | alt: ... step_0 ]*\n     * Output: *[ ... | alt: ... sig_part ]*\n     */\n    OP_DUP\n    <15> OP_NUMNOTEQUAL\n    OP_IF\n        OP_TOALTSTACK\n        OP_2DUP\n        <0x0c>\n        OP_INVOKE // [[ I_through_i_upper ]]\n        OP_FROMALTSTACK // *[... j ]\n        <1> OP_NUM2BIN // 0 must be padded for RFC 8554 compatibility\n        OP_BEGIN // *[ ... I_through_i_upper, j | alt: ... step_0 ]*\n            OP_2DUP OP_CAT // [[ I_through_j ]]\n            OP_FROMALTSTACK\n            OP_CAT // [[ next_step_preimage ]]\n            OP_SHA256 // [[ next_step ]]\n            OP_TOALTSTACK\n            // OP_SWAP // *[ ... j_end, j ]*\n            OP_BIN2NUM OP_1ADD // [[ next_j ]] (accepts padded 0 for RFC 8554 compatibility)\n            OP_DUP\n            <15>\n            OP_GREATERTHANOREQUAL\n        OP_UNTIL // *[ ... | alt: ... upper_sig_part ]*\n        OP_2DROP\n    OP_ELSE\n        OP_DROP\n    OP_ENDIF\n> <0x0d> // [[ chain_step, f_chain_step ]]\nOP_DEFINE\n<> // [[ signature_slot ]]\nOP_SWAP\n<0> // i (wallet-only bytecode, looping forward for simplicity)\n/**\n * Loop input: *[ signature_slot, I_and_q, i | alt: encoded_message_hash, x ]*\n */\nOP_BEGIN\n    OP_FROMALTSTACK\n    OP_FROMALTSTACK\n    <1> OP_SPLIT // [[ message_byte, remaining_message_hash ]]\n    OP_SIZE // [[ has_more_bytes ]]\n    OP_SWAP // *[ ... has_more_bytes, remaining_message_hash ]*\n    OP_TOALTSTACK OP_TOALTSTACK\n    OP_SWAP // *[ x ]*\n    <32> OP_SPLIT // [[ upper_step_init, remaining_x ]]\n    OP_TOALTSTACK // *[ ... message_byte, upper_step_init | alt: remaining_message_hash, has_more_bytes, remaining_x ]*\n    OP_SWAP \n    OP_DUP OP_TOALTSTACK // Save message_byte for lower nibble\n    <4> OP_RSHIFTBIN OP_BIN2NUM // [[ upper_j ]]\n    OP_SWAP // *[ ... upper_step_init ]*\n    OP_TOALTSTACK\n    /**\n     * Input: *[ signature_slot, I_and_q, i, upper_j | alt: ... upper_step_init ]*\n     */\n    <0x0d>\n    OP_INVOKE // *[ signature_slot, I_and_q, i | alt: ... upper_sig_part ]*\n    OP_1ADD // [[ i_lower ]]\n    OP_FROMALTSTACK // [[ upper_sig_part ]]\n    OP_ROT\n    OP_ROT\n    OP_FROMALTSTACK // *[ ... message_byte ]*\n    <0x0f> OP_AND OP_BIN2NUM // [[ lower_j ]]\n    OP_FROMALTSTACK \n    OP_FROMALTSTACK // Top: *[ signature_slot, upper_sig_part, I_and_q, i_lower, lower_j, remaining_x, has_more_bytes | alt: remaining_message_hash ]*\n    OP_IF\n        <32> OP_SPLIT // [[ lower_step_init, remaining_x ]]\n        OP_TOALTSTACK OP_TOALTSTACK\n        /**\n         * Input: *[ ... I_and_q, i_lower, lower_j | alt: ... lower_step_init ]*\n         */\n        <0x0d>\n        OP_INVOKE // *[ signature_slot, upper_sig_part, I_and_q, i_lower | alt: ... lower_sig_part ]*\n        OP_2SWAP\n        OP_FROMALTSTACK // [[ lower_sig_part ]]\n        OP_CAT // [[ both_sig_parts ]]\n        OP_CAT // [[ signature_so_far ]]\n        OP_ROT OP_ROT // *[ signature_so_far, I_and_q, i_lower ]*\n        OP_1ADD // [[ next_i_upper ]]\n        <0> // [[ continue_loop ]]\n    OP_ELSE\n        OP_FROMALTSTACK // By design: don't pollute alt (even if it works for most use cases and saves a byte)\n        // Remaining_message_hash and lower_j_end are now verified 0, but remaining_x could be longer due to malleation:\n        // *[ signature_slot, upper_sig_part, I_and_q, i_lower, lower_j, remaining_x, remaining_message_hash ]*\n        OP_CAT\n        OP_CAT // If remaining_x was 0, this [[ should_be_zero ]]\n        OP_NOT // Assert that should_be_zero is 0 (consumed by OP_UNTIL)\n    OP_ENDIF\nOP_UNTIL // *[ signature_slot, upper_sig_part, I_and_q, i_lower ]* \nOP_DROP\n<0x8080> // [[ D_PBLC ]]\nOP_2SWAP\nOP_CAT // [[ quantum_public_key_Y ]]\nOP_CAT OP_CAT // [[ quantum_public_key_preimage ]]\nOP_SHA256 // [[ quantum_public_key ]]",
+      "tests": {
+        "test_key_candidate_derivation": {
+          "check": "OP_SIZE <32> OP_EQUALVERIFY\n<0x78e80354e497adc33427779ff52c4f09b328d37b657cf155aae61c96400d74d8> OP_EQUAL",
+          "name": "Test Key Candidate Derivation",
+          "setup": "/**\n * Verify key candidate derivation (the core of a\n * quantum signature check) matches RFC 8554 with\n * a known-answer test.\n */\n<0x552015bd3e70f7797fafa92d6aa96eeb1d20c5765d8f51853d99e3bfff3c48ce993e4d9bdcd5ef0846beba8cbdf46fce20e110aeec44caeab6fecb73d99239231f0f5317f7a783a4429254d6b8907946755b14edbdf5ee5a352020bf38c5373ba38fd0e67eb7a5276686cfc9fe8cd3e21ba142e88cec65c554dd2778297e3e9c681f33fa6fca58649432516b1cc82c0b52ac5a0aba7eb5f02430b39c2e9c680507a584e201ae89bbbeb2a4463cec235bf16ce7ea4d2b20aa766c1ff8ebc32fcc9d8647915f53191168079b288e65380350c7b69eca6a332fc69a7575e3fa16f5a2a623f6f941aeee39972e86356c2974778140d8ab5aed264297f62f950cd068b95d09e0757a8c7c9c1eefdf036ea8dc31f8dd2a03bbb1007fa15fe3addabd5d29608c1c19ba2db952d7e97853e9bb4d64d4745ddbe59c7bcce78eaf9a6a6c8850e63e16fdb447010b01f388bde5f001425f8a7bb974ee6a86f5697708af044b8d7da70fc8ef0697822fd190120e634a8dd732d83eb5853eb3df54f4fc0e838e967e9551698d36bf2a037ed1c4ba3270a079aae784845d1112a93ad5e20a60ded4046fd5d0f67dc933c85bec4baf93c49ba5a460484b5568f26c4ee54cdc11b49317d6a1c23ddc4f324ff001718f8906264d49d8900a6a51f42dad42ee9591fcf743efd1782954dc57600618821aeb7d6b37e59c9dcee0c80d35f4be265a9d3061899eb7ed3c2ef35287daa2facd233c6a9b491764216411d387851a3c4b2ae673922822cdcdc66285dcbbffd2eabe502ffe199654f3cc98fde6b3234add60cff9d60271b1959e0d5a92e589124e1070a0c7fa90b6853f028640569c00b26aa76ee7d372c4e4c1d5b50576aa17c3d37eb453eadce3756010caef606c77cae01549ce634ff3da23b5b0567d398ddddffda0267c81b30af912c66ab2bb7f3e378c6da86a599a2f00bc9dc09cc7dad9940eea4f2e2f82a50755c535e17dff31d0911f5055d5e09deb52a44f083fa7f2a79ef7f5168a5244b6581f5862817268811c8a01048d4f74bcb786ac1fa777944951440619bce2d5157d3eedcb086cdd2692398b92e4f4a23544aa376970cf3b2be9b3693c5a1eddf8c4372c50b5dd03b077b6fa941d763431f8a96c65d5a8755487b2bc6c20c5b5a5f25f8943c825045fddd3273f87f077b53e66e5035671a9f37d97310eb7cb888de9f10c484beee6f1e9044b0ee22c4004e498eec5566ffbcad1c029f8f6aa768eb8da0045a17f3ccd924d30f195fed20aec4c4e2860f13470e796d296e8a0e897289bcf303ab5db4947487cbc1c54cbdc04505485cb5ebc55cfc0336a62502baa7d8dae2c9f7f2588f27c21fe3bdd0b6e92e857be306f5e0e6c77a900a7cd5b86bead3698c12f1ebb4a183ea47fb42cc8f11857c7a45a9a3ab44682b7bf36674e8b7cfd9ae4b6e0aa4951b04ed42ac76035b356b7cd92df79f320d36053a401a9d70ea0a6f587142a35d1a5dcf77c94e3e0f511f13239486b89e3d12ad61195ff048e76a9948b0a178a91fc9ed81b6f07b14c3488f7c87b986a6d16f63598629fea1c78fefe1f1805a97cd27e20b90d4fee642a6d901a6160842e23507a5cd3f8befc98136133e703c14e9ed6a20bd138c7e0af9bca340f718fad53f109202ec15c494df621d723c756d532fea1c4dbd32532e203c9e8bcb4def99138798eff93c8e8b45ec699b6ae4a40a8d81f8404e2cd7f12b61ccec6e6e815cbd00ad544a3072d2b39fa5de3a3517266ddcf11f5eae7f75c1ae3429ab8109e148f7742afc6a9a1bc8a5547a5c5cac85eac7246a5d4e26440cbf4142f66b91a478b39fca733ce9e59792e21223e4cb16f3afd9669e45f61fd74309b9f6b13454a05e8a354dc717f1e513f619e2f326821622ea6b23738a41959c8c20567656b9290fb153cb5ff65567f28e8a89017c5754d26dda4e29de97360b1d45afef923f83724ab577585d2389f25b4573151c24035e7436d13bc432430c0a5403eaa807d71def9ea3ee4243cec5cbac90501c609bdcaf1c0e458c99dba2c12568ad082778d8e3ba834f28068052ad12d53c078ae7996adffa89231389bd023ead59b4718363660a8fc6fa163ac206b052356f100866801e292af77a81ac1402ebdd7af6ab0b63677a6ea3dee32204b395321e86b979bdd295a1811b15113efb690e50766f55157b1f35963813e3847f2d9001b76dfd5bbaddae5a72c91572253705a120f695510cf8127143790f299a124f614e489208d5b77f93c9a121092d439f2904ba3771278412815af72804d34e5834fc4080d41c893759256b4b2bf022bcf74320b97b59d97b86e72ce58f7b0709528a3fa99acb9f5ec679a68c072b4e797ceea170a9840343cdab294302bbae2f3dcefc903adf2267210fce3e4a0c0bdcf9f52ad76a9a09fa288c78e0842d0c82c82b0b93a51ef56bf4dd66aeadf9238f104514f1d714dd3b863089e470ff474794b7e6e478d5a0095970e0ab488543569931e16152f6e7ccd83240e06cde70dc3f244a201e1690f6823b9c3e6989f2c99cb448f079737b0baab4fa2ea24e149136db8caedf9d120d93fdf23d218d0d8c29771deb7747b338e95677584c30db9a7c85f622d29d2fa44c308083166451871e68be0173e48ceafcb35d87a7307c13ada5be013be6c8b3d294fd6e1db3d1b834305177d1c49dbdd8cabdd61c92feab6085da31319984c58d9b0be66008ba7a5a33251d4390dffb295cb601f7ecce54c79e381258d6fae76a9c488a30106e68a9b0aeeaad08ad83f22ce9a70f733f10cc210a488e17029c4c8f713c481d53ba6a9f69d0df9fc064c36e547bad6c164963d31a971262b85e60ad6b0ce8f25b28d91a3d1fb679dca7e8b80bd2ad0f76e763b6cf2a4cb8d4a226bfc002e073f6760fb806725c550e97c6d89b15929bf84014ef78c09d0e2e6ec8301a3ded2531daf0fe1d863a6fea0ae9e21642e315afccfa071cc56a77e2a7fb28773fa978684353bc9e8f6e9181c70811ea3bc717f87a2> // quantum signatures [[ Y ]]\n<0xd08fabd4a2091ff0a8cb4ed834e74534> // [[ I ]]\n<0> // [[ q ]]\n<0x2773ae45f3d3a711b3067d51f539eb7c1e9e6a0ea44893d4c73ff926c14a691d> //  [[ C ]]\n<0x6578616d706c65> // [[ message ]]"
+        }
+      }
+    },
+    "lm-ots_key_identifier": {
+      "name": "LM-OTS Key Identifier",
+      "script": "/**\n * RFC 8554 Key Identifier, `I`. \n * \n * For privacy and bytecode minimization, this vault never re-uses\n * seeds or public keys. However, RFC 8554 expects `I` to be\n * \"chosen uniformly at random, or via a pseudorandom process\";\n * some bytes could possibly be saved by treating `I` and `q`\n * as one empty 20-byte value (or omitting them entirely), but\n * that would deviate from the simplest-to-review and most\n * widely-reviewed option: setting `I` as required by RFC 8554.\n */\n<identifier_source.public_key> OP_HASH256 <16> OP_SPLIT OP_DROP",
+      "tests": {
+        "test_identifier_generation": {
+          "check": "OP_DEPTH <1> OP_EQUALVERIFY\nOP_SIZE <16> OP_EQUAL OP_NIP",
+          "name": "Test Identifier Generation"
+        }
+      }
+    },
+    "lm-ots_message_randomizer": {
+      "name": "LM-OTS Message Randomizer",
+      "script": "/**\n * RFC 8554 requires a random or pseudorandom message\n * randomizer (\"C\") to prevent various kinds of attacks:\n * multi-target pre-computation, cross parameter-set\n * prefix attacks, catastrophic leaks from accidental\n * key reuse or fault attacks, etc.\n * \n * We use pseudorandom material for determinism, so it's\n * critical that we mix-in the signed message itself to\n * maximize protection in the unusual event of key reuse. \n * \n * Note: architecturally, each quantum UTXO is one-time\n * use, with little potential for accidental re-use, even\n * across many wallet devices and many inbound payments.\n * \n * This is a feature of CashToken aggregation/delegation:\n * receive addresses don't even leak that you're using\n * Quantumroot, and unless your wallet makes a quantum\n * spend, no receive addresses can be connected with the\n * delegated token category (the unrevealed category is\n * also hashed with a per-address privacy nonce in the\n * hidden quantum spending path).\n * \n * Since each wallet device can control its own CashToken\n * \"master key\", and wallets always move the token to\n * the next address index during a quantum spend, even\n * if an attacker is able to make a wallet device forget\n * about a past spend, the past spend will typically\n * already be confirmed in a block; there's nothing\n * left to protect.\n * \n * However, there may be cases where an attacker is able\n * to intercept many spend attempts or otherwise interfere\n * more directly with the wallet – in these cases, careful\n * message randomizer construction adds additional security.\n */\n\n<nonce_source.public_key> // [[ deterministic_nonce ]]\n<$(quantum_lock_serialize_transaction)> // [[ serialization_hash ]]\n/**\n * This is already RFC 8554 compliant, but NIST SP 800‐208\n * requires an approved Deterministic Random Bit Generator\n * (DRBG). To modify this scheme for that FIPs requirement\n * (i.e. you're building this into a \"hardware cryptographic\n * module\"), drop in an approved DRBG here.\n * \n * As of now, we're correctly \"re-seeding\" a double SHA-256\n * function (with >256 bits) before every single spend.\n */\nOP_CAT OP_HASH256 // [[ message_randomizer ]]",
+      "tests": {
+        "test_nonce_generation": {
+          "check": "OP_DEPTH <1> OP_EQUALVERIFY\nOP_SIZE <32> OP_EQUAL OP_NIP",
+          "name": "Test Nonce Generation"
+        }
+      }
+    },
+    "lm-ots_private_key": {
+      "name": "LM-OTS Private Key",
+      "script": "/**\n * Generate the LM-OTS private key according to the\n * key-stretching procedure in RFC 8554.\n * \n * Inputs: <I> <q> <seed>\n * Outputs: <private_key>\n * \n * Note that this script is only used internally by the\n * compiler to stretch a hardened HD key for quantum use,\n * it is not evaluated on-chain. If needed, the computation\n * density limits in this IDE can be increased by switching\n * to the BCH_SPEC VM (top right window corner).\n * \n * Expected stack: *[ I, q, seed ]*\n */\nOP_TOALTSTACK \n<4> OP_NUM2BIN // [[padded_q]]\nOP_TOALTSTACK \nOP_TOALTSTACK\n\n<> // Start accumulated key with an empty stack item. \n<0> // [[ initial_i ]]\nOP_BEGIN \n    \n    /**\n     * Lazy stack scheduling; doesn't need to be efficient,\n     * this is only evaluated in wallets.\n     */\n    OP_FROMALTSTACK OP_FROMALTSTACK OP_FROMALTSTACK\n    OP_3DUP OP_TOALTSTACK OP_TOALTSTACK OP_TOALTSTACK\n    \n    OP_TOALTSTACK OP_CAT // [[ I_and_q ]]\n    /**\n     * Little-endian would be more natural in BCH VM, but for\n     * RFC 8554 compatibility, we reverse:\n     */\n    OP_OVER <2> OP_NUM2BIN OP_REVERSEBYTES // [[ padded_i ]]\n    <0xff>\n    OP_FROMALTSTACK\n    OP_CAT OP_CAT OP_CAT // [[ element_preimage ]]\n    OP_SHA256\n    OP_ROT \n    OP_SWAP\n    OP_CAT // [[ accumulated_so_far ]]\n    OP_SWAP\n\n    OP_1ADD // [[ next_i ]]\n    OP_DUP\n    <67> // [[ required_hash_chains ]]\n    OP_GREATERTHANOREQUAL \nOP_UNTIL OP_DROP // [[ quantum_private_key ]]",
+      "tests": {
+        "test_private_key_generation": {
+          "check": "OP_SIZE <2144> OP_EQUALVERIFY\n<0xf84c9039770402b34f9ede799d8c42bd5a870d5fada473a76d268b3d0549f3d6f558df0d9544266319478324dc59fec0a719dea939639a5fc72e5e56bd8f704ec50c64288047246553bd8d707e06ac58984b883e1f2d2066fa6435b6aa9bf79c629f25ac346dc1cf34cbff02ffc177f01c76d35cee41a285ce70ae3a70a0172d7c845c009fd85aa69b082b36775bab52725a636ac9a8bd01ad26b0de18c2cf45cf8c2dff6c16745be9308670ce613a81d3bf2b479165b5f25da416e2183474d7bdfdd9e164337b71cf5e68046618e1a0011e55809530e2f2a76e0a413baf1d70fdfee76dd2a751b5eee9968a47c8c3ef5c39188e12a4d432fb5977fc8d7694725e315fbeae91f6b36594bb7100fa618d5dbf202e20a7136080951fa53fcf8949462dd2e79bd8f29ef57d879db0467d56c9b1d2285b7f2d2012eb85e4a61f042fef7beae86fc042b440155508eecc5ecb2f139de2967b26b19fe93059f50f1c358d7da70fc8ef0697822fd190120e634a8dd732d83eb5853eb3df54f4fc0e838e585f6e811b6fd0658d4b7226e8caab6698b0f0e54e357a874d58492da4e07f9ebea20adf202552e69fc4ae0d0b77d57f1222a6beb14f56214142262cccb03b64b16b782e1dfb3c9e9ed905d89bffde0d1c2f87be083a1963fb074e775d634c7860595593a5b0418ad6f7a9e7b3ad29f405929568106de72f87082ed4335bbf8b39c959159a35397273bd51bcc03a6421b363fcb30707926a4a5c7331fae271bda6fb4a22aa84a51ca13c75ba48f8fa08475c1e90fda0aa1f1b28c397aebf0e3494f5f1d96bb2e252655c68b566a2a4d6df6b1105452e513f9c03a42b37303492ac2f0e7237115d17c9f3bee9317e91596e136067a6d2004d545a52c1aabac6d0c72c5d1ad63ed6bb7bd451eaa5083e43553bb1c55eb1f1e400d2f7f85ca154002ed000eb1c1f1faa3c4021858f914e320af5faa3e10feb571fbbf23b1c72f7d73935b081dd6aab64f51bc6769f71a98165ce903bba700e58108daabce2fefdb7ff03d5389834d2ea3f16382d32653c92fdb38691c89302ad4de6f12545a48f43398b92e4f4a23544aa376970cf3b2be9b3693c5a1eddf8c4372c50b5dd03b077305e3a2e13c4bbc514438960d74de37d72ab887e8bcb5d22ff71077ff57281b37b9b9c0c614f80b5e916ab1421d83fd12e98a82e4b283a56b2620f1bde5961e7fbd5536d415bd4d072452277d767ba674e231444eaf1145f8afc2dbb5049c61e40cddaef39d8b2c56d3eb3f58912b2a2f2c9146442ccf08d83a20bfe3d3633abd8c33e18fd810f065e9aa385e50ec1ac04149516cee82cda0e308ac2f7c3fdac3ba3678e5313e26e810572275b628c03e4006f45602ab3ba041f95017616e3368c798862485b20e97818314a307bb605d234814d3c10d78bb868823beaa1d1dd301437071dd66da31f85ef768588efc41615726a49af242082fbc38bbba3a3ce56356f5de648feaf9dbb10652b9e3ba837f877a1af6d2109b1bdd1b35fe35d6647269f9646e7e487a09027cf9ddb2f92621310b94d746271af23a9a42aebe121497e96fa82c54bcd8e81864e76f9ed6f5bb7099066314b16430a27f183ca5b5cdae4d856375733270180f5a25198c1f7938103ba06debd1986d9b603d794df79ce57069ad812abcccdbee201ee88b2b0ae67cd46e97c8a9e318e3a2c5ce3b385562329021d7c19d8f0c411d546525a83eea69e950da644b015e87e4f0212ba2cc93c820095f2af08d94c4ac828836ca772b96577ef71b561fcc6dd5d7a87183eefff199bcdc2bf5b1819838eedf122cb6857bc143458889a63234e438fb80caf1560424b27a6df425c6dee1802b80d4efa42d29e504429479452394816b92ccf84845f820bdae17657f92c770a2ae83d882098712768c62139655ecc0ab209cd1bc3998de8ba66882bb31d4ecb100a6f5c78525d4e5ad534b5f88cae559011b34510e197053655682029df0ccb90142317bc52f2a20ca7e8bbb068cb3b0544586fe903ce06dd4bf79a65ce1584076c68d9ad05d7f514b7f00b0db6aaa9a1f9cb9ac1c06ae8cec0adf8da1584808f5466260f97d62a79c31d7ac74ea682946486c0b02c01fa9a02fbeacc82018d214b62a0692a6836dcefdbe9806c8782996abcd275f84322212c1b105b3b00d461676e94aca77fae837203d856c95135459527dc7b4011a5c442be06b15be670ce4ef87dfb36b553a69ebda476987f3c44af11f57ad85de59dd85e6f9f4b46e741679942f9688eb9b4ff2ad7361f584af6476065df1e984c41de5d88a1baefd32cc117c9f5ca2c76e0514f2124f6ecb212c5c6ce7689e511d884990975a0d7802172e7316a9b63ac1e86e8ac60d22e5d660ec7da6b13546fdc072a64d915c69cbbdfaad30baca439d6ee9299ca2a9dd4f6b09044fb7b238551e093717b02298320716e990beab5624613451ca1e1900b15219a50f7a7665526c10f0631415059bb2fe72fc7f8cae8d6a1df91d325de4d2e3154a1dda109fd6244b6b2b951e2f143651d5b102d2e647aa6c7b3a6c0e6e08ddc0aa845459671b1676e7cb5d3dd0dfed774b313c091dbca8e28a22c4fd52fb2f8fca1132a15f1f30511cd7541edfa76bddc36191004706949d98a834389ccab1187eeb06bf52a69d7ad699491eb7d15283a8ebfe194a286932837c8a361ea34aa4722e77bdd48be1c99d73f7a60c07c36bd42b6c154e48a1c20f1d9f85bccfa799383c19c4740502b8a969ef811b259fd2fabf8d35390787135710de594777d0846609eb7a1c9f5c07c23a4f2e9beb2d22420b76a8a3b941631417f410a15bf709671d985f4f7902a2bfc1566f766d3ea8d266884cae77c650252394b7366deb2a392b639256a12f8bceb0324dc88373fb7dcbbf8dd8efed5aff9f2223dec392942d6d63ed4574eef3ae67cd4b53bee93f8b59b80197183481226df4cb11f6c68028ed107064a81ef532dff8842e14b6252064a678b6ee291166bdc916df81e87fe> // [[ known_correct_private_key ]]\nOP_EQUAL",
+          "name": "Test Private Key Generation",
+          "setup": "/**\n * Verify key generation matches RFC 8554 with\n * a known-answer test.\n */\n<0xd08fabd4a2091ff0a8cb4ed834e74534> // [[ I ]]\n<0> // [[ q ]]\n<0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f> //  [[ seed ]]"
+        }
+      }
+    },
+    "lm-ots_public_key": {
+      "name": "LM-OTS Public Key",
+      "script": "OP_DROP // *[ variable_length_garbage ]* </hack>\n/**\n * Expected stack: *[ x, I, q ]*\n */\n<4> OP_NUM2BIN // [[padded_q]]\nOP_CAT // Prepared prefix: [[ I_and_q ]]\nOP_SWAP\nOP_TOALTSTACK\n<> // [[ out_slot ]] \nOP_SWAP\n<0> // [[ i ]]\n/**\n * Input stack: <out_slot> <I_and_q> <i> | altstack: <quantum_private_key_x>\n */\nOP_BEGIN\n    /**\n     * Each iteration, slice off the next 32-byte chunk for processing:\n     */\n    OP_FROMALTSTACK <32> OP_SPLIT // [[ remaining_x ]]\n    OP_TOALTSTACK // [[ next_chunk_x ]]\n    OP_TOALTSTACK\n    OP_2DUP\n    <2> OP_NUM2BIN OP_REVERSEBYTES //  [[ padded_i ]] (big-endian for RFC 8554)\n    OP_CAT // [[ I_through_i ]]\n    <0x00> // [[ j ]] start with padded 0 for RFC 8554 compatibility\n    /**\n     * Input stack: <I_through_i> <j> | altstack: <remaining_x> <chunk>\n     */\n    OP_BEGIN\n       OP_2DUP OP_CAT // [[ I_through_j ]]\n       OP_FROMALTSTACK\n       OP_CAT // [[ next_step_preimage ]]\n       OP_SHA256 // [[ next_step_chunk ]]\n       OP_TOALTSTACK\n       OP_BIN2NUM OP_1ADD // BIN2NUM required since we padded 0 (RFC 8554 compatibility)\n       OP_DUP\n       <15> OP_GREATERTHANOREQUAL\n    OP_UNTIL OP_2DROP\n    OP_ROT // top: out_slot\n    OP_FROMALTSTACK // [[ public_key_element ]]\n    OP_CAT // [[ public_key_so_far ]]\n    OP_ROT OP_ROT\n    OP_1ADD\n    OP_DUP\n    <67> OP_GREATERTHANOREQUAL\nOP_UNTIL\nOP_DROP\n<0x8080> // [[ D_PBLC ]] quantum_public_key\nOP_ROT // [[ quantum_public_key_Y ]]\nOP_CAT OP_CAT // [[ quantum_public_key_preimage ]]\nOP_SHA256 // [[ quantum_public_key ]]",
+      "tests": {
+        "test_public_key_derivation": {
+          "check": "OP_SIZE <32>\nOP_EQUALVERIFY\n<0x78e80354e497adc33427779ff52c4f09b328d37b657cf155aae61c96400d74d8> OP_EQUAL",
+          "name": "Test Public Key Derivation",
+          "setup": "/**\n * Verify public key derivation matches RFC 8554 with\n * a known-answer test.\n */\n<0xf84c9039770402b34f9ede799d8c42bd5a870d5fada473a76d268b3d0549f3d6f558df0d9544266319478324dc59fec0a719dea939639a5fc72e5e56bd8f704ec50c64288047246553bd8d707e06ac58984b883e1f2d2066fa6435b6aa9bf79c629f25ac346dc1cf34cbff02ffc177f01c76d35cee41a285ce70ae3a70a0172d7c845c009fd85aa69b082b36775bab52725a636ac9a8bd01ad26b0de18c2cf45cf8c2dff6c16745be9308670ce613a81d3bf2b479165b5f25da416e2183474d7bdfdd9e164337b71cf5e68046618e1a0011e55809530e2f2a76e0a413baf1d70fdfee76dd2a751b5eee9968a47c8c3ef5c39188e12a4d432fb5977fc8d7694725e315fbeae91f6b36594bb7100fa618d5dbf202e20a7136080951fa53fcf8949462dd2e79bd8f29ef57d879db0467d56c9b1d2285b7f2d2012eb85e4a61f042fef7beae86fc042b440155508eecc5ecb2f139de2967b26b19fe93059f50f1c358d7da70fc8ef0697822fd190120e634a8dd732d83eb5853eb3df54f4fc0e838e585f6e811b6fd0658d4b7226e8caab6698b0f0e54e357a874d58492da4e07f9ebea20adf202552e69fc4ae0d0b77d57f1222a6beb14f56214142262cccb03b64b16b782e1dfb3c9e9ed905d89bffde0d1c2f87be083a1963fb074e775d634c7860595593a5b0418ad6f7a9e7b3ad29f405929568106de72f87082ed4335bbf8b39c959159a35397273bd51bcc03a6421b363fcb30707926a4a5c7331fae271bda6fb4a22aa84a51ca13c75ba48f8fa08475c1e90fda0aa1f1b28c397aebf0e3494f5f1d96bb2e252655c68b566a2a4d6df6b1105452e513f9c03a42b37303492ac2f0e7237115d17c9f3bee9317e91596e136067a6d2004d545a52c1aabac6d0c72c5d1ad63ed6bb7bd451eaa5083e43553bb1c55eb1f1e400d2f7f85ca154002ed000eb1c1f1faa3c4021858f914e320af5faa3e10feb571fbbf23b1c72f7d73935b081dd6aab64f51bc6769f71a98165ce903bba700e58108daabce2fefdb7ff03d5389834d2ea3f16382d32653c92fdb38691c89302ad4de6f12545a48f43398b92e4f4a23544aa376970cf3b2be9b3693c5a1eddf8c4372c50b5dd03b077305e3a2e13c4bbc514438960d74de37d72ab887e8bcb5d22ff71077ff57281b37b9b9c0c614f80b5e916ab1421d83fd12e98a82e4b283a56b2620f1bde5961e7fbd5536d415bd4d072452277d767ba674e231444eaf1145f8afc2dbb5049c61e40cddaef39d8b2c56d3eb3f58912b2a2f2c9146442ccf08d83a20bfe3d3633abd8c33e18fd810f065e9aa385e50ec1ac04149516cee82cda0e308ac2f7c3fdac3ba3678e5313e26e810572275b628c03e4006f45602ab3ba041f95017616e3368c798862485b20e97818314a307bb605d234814d3c10d78bb868823beaa1d1dd301437071dd66da31f85ef768588efc41615726a49af242082fbc38bbba3a3ce56356f5de648feaf9dbb10652b9e3ba837f877a1af6d2109b1bdd1b35fe35d6647269f9646e7e487a09027cf9ddb2f92621310b94d746271af23a9a42aebe121497e96fa82c54bcd8e81864e76f9ed6f5bb7099066314b16430a27f183ca5b5cdae4d856375733270180f5a25198c1f7938103ba06debd1986d9b603d794df79ce57069ad812abcccdbee201ee88b2b0ae67cd46e97c8a9e318e3a2c5ce3b385562329021d7c19d8f0c411d546525a83eea69e950da644b015e87e4f0212ba2cc93c820095f2af08d94c4ac828836ca772b96577ef71b561fcc6dd5d7a87183eefff199bcdc2bf5b1819838eedf122cb6857bc143458889a63234e438fb80caf1560424b27a6df425c6dee1802b80d4efa42d29e504429479452394816b92ccf84845f820bdae17657f92c770a2ae83d882098712768c62139655ecc0ab209cd1bc3998de8ba66882bb31d4ecb100a6f5c78525d4e5ad534b5f88cae559011b34510e197053655682029df0ccb90142317bc52f2a20ca7e8bbb068cb3b0544586fe903ce06dd4bf79a65ce1584076c68d9ad05d7f514b7f00b0db6aaa9a1f9cb9ac1c06ae8cec0adf8da1584808f5466260f97d62a79c31d7ac74ea682946486c0b02c01fa9a02fbeacc82018d214b62a0692a6836dcefdbe9806c8782996abcd275f84322212c1b105b3b00d461676e94aca77fae837203d856c95135459527dc7b4011a5c442be06b15be670ce4ef87dfb36b553a69ebda476987f3c44af11f57ad85de59dd85e6f9f4b46e741679942f9688eb9b4ff2ad7361f584af6476065df1e984c41de5d88a1baefd32cc117c9f5ca2c76e0514f2124f6ecb212c5c6ce7689e511d884990975a0d7802172e7316a9b63ac1e86e8ac60d22e5d660ec7da6b13546fdc072a64d915c69cbbdfaad30baca439d6ee9299ca2a9dd4f6b09044fb7b238551e093717b02298320716e990beab5624613451ca1e1900b15219a50f7a7665526c10f0631415059bb2fe72fc7f8cae8d6a1df91d325de4d2e3154a1dda109fd6244b6b2b951e2f143651d5b102d2e647aa6c7b3a6c0e6e08ddc0aa845459671b1676e7cb5d3dd0dfed774b313c091dbca8e28a22c4fd52fb2f8fca1132a15f1f30511cd7541edfa76bddc36191004706949d98a834389ccab1187eeb06bf52a69d7ad699491eb7d15283a8ebfe194a286932837c8a361ea34aa4722e77bdd48be1c99d73f7a60c07c36bd42b6c154e48a1c20f1d9f85bccfa799383c19c4740502b8a969ef811b259fd2fabf8d35390787135710de594777d0846609eb7a1c9f5c07c23a4f2e9beb2d22420b76a8a3b941631417f410a15bf709671d985f4f7902a2bfc1566f766d3ea8d266884cae77c650252394b7366deb2a392b639256a12f8bceb0324dc88373fb7dcbbf8dd8efed5aff9f2223dec392942d6d63ed4574eef3ae67cd4b53bee93f8b59b80197183481226df4cb11f6c68028ed107064a81ef532dff8842e14b6252064a678b6ee291166bdc916df81e87fe> // [[ x ]]\n<0xd08fabd4a2091ff0a8cb4ed834e74534> // [[ I ]]\n<0> // [[ q ]]\n<$(<0> <160> OP_NUM2BIN)> // [[ variable_length_garbage ]] <hack> this public key derivation script only runs in wallets via CashAssembly internal evaluations, where compilation limits are sufficient, but this little hack makes it easier to review the script in Bitauth IDE without having to switch modes. (A future IDE version could intelligently switch.)"
+        }
+      }
+    },
+    "lm-ots_sign": {
+      "name": "LM-OTS Sign",
+      "script": "/**\n * This script generates an LM-OTS signature – it's only evaluated\n * inside the wallet during transaction signing.\n * \n * Signing time only depends on the message, so the algorithm\n * is fundamentally resistant to side-channel private key leaks.\n * To make signing completely constant-time (i.e. to prevent a\n * powerful eavesdropper from correlating the wallet with the\n * messages being signed using signing times) simply verify each\n * signature before broadcasting it: just verify the transaction,\n * e.g. with Libauth's `vm.verify`. \n * \n * Note that verifying transactions before broadcast is already\n * a defense-in-depth best practice. Wallet software faults\n * which go undetected all the way to an attempted broadcast of\n * an invalid transaction can often jeopardize security and/or\n * privacy. This is especially true for one-time signature\n * schemes: with only two signature attempts, a listening\n * attacker can extract enough hash chain points to forge\n * new signatures.\n * \n * Pre-broadcast validation eliminates both of these risks.\n * \n * Expected stack: *[ x, I, q, C, message ]*\n */\nOP_TOALTSTACK\nOP_SIZE <32> OP_EQUALVERIFY // Sanity-check message randomizer\nOP_TOALTSTACK\n<4> OP_NUM2BIN // [[padded_q]]\nOP_CAT // Prepared prefix: [[ I_and_q ]]\nOP_DUP\n<0x8181> // [[ D_MESG ]]\nOP_FROMALTSTACK\nOP_FROMALTSTACK\nOP_CAT OP_CAT OP_CAT // [[ message_preimage ]]\nOP_SHA256 // the message hash to be signed: [[ Q ]]\nOP_DUP\nlm-ots_checksum // [[ checksum ]]\n<\n    <2> OP_NUM2BIN OP_REVERSEBYTES // (big-endian for RFC 8554)\n    OP_CAT\n> <0x0c> // [[ u16str_cat, f_u16str_cat ]]\nOP_DEFINE\n<0x0c> OP_INVOKE // [[ encoded_message_hash ]]\nOP_TOALTSTACK\nOP_SWAP\nOP_TOALTSTACK\n<\n    /**\n     * Input:  *[ ... I_and_q, i, j_end | alt: ... step_0 ]*\n     * Output: *[ ... | alt: ... sig_part ]*\n     */\n    OP_IFDUP\n    OP_IF\n        OP_TOALTSTACK\n        OP_2DUP\n        <0x0c>\n        OP_INVOKE // [[ I_through_i_upper ]]\n        OP_FROMALTSTACK\n        OP_SWAP\n        <0x00> // [[ j ]] start with padded 0 for RFC 8554 compatibility\n        OP_BEGIN // *[ ... j_end, I_through_i_upper, j | alt: ... step_0 ]*\n            OP_3DUP OP_CAT // [[ I_through_j ]]\n            OP_FROMALTSTACK\n            OP_CAT // [[ next_step_preimage ]]\n            OP_SHA256 // [[ next_step ]]\n            OP_TOALTSTACK\n            OP_SWAP // *[ ... j_end, j ]*\n            OP_BIN2NUM OP_1ADD // [[ next_j ]] (accepts padded 0 for RFC 8554 compatibility)\n            OP_DUP\n            OP_ROT\n            OP_GREATERTHANOREQUAL\n        OP_UNTIL // *[ ... | alt: ... upper_sig_part ]*\n        OP_2DROP\n        OP_DROP\n    OP_ENDIF\n> <0x0d> // [[ chain_step, f_chain_step ]]\nOP_DEFINE\n<> // [[ signature_slot ]]\nOP_SWAP\n<0> // i (wallet-only bytecode, looping forward for simplicity)\n/**\n * Loop input: *[ signature_slot, I_and_q, i | alt: encoded_message_hash, x ]*\n */\nOP_BEGIN\n    OP_FROMALTSTACK\n    OP_FROMALTSTACK\n    <1> OP_SPLIT // [[ message_byte, remaining_message_hash ]]\n    OP_SIZE // [[ has_more_bytes ]]\n    OP_SWAP // *[ ... has_more_bytes, remaining_message_hash ]*\n    OP_TOALTSTACK OP_TOALTSTACK\n    OP_SWAP // *[ x ]*\n    <32> OP_SPLIT // [[ upper_step_init, remaining_x ]]\n    OP_TOALTSTACK // *[ ... message_byte, upper_step_init | alt: remaining_message_hash, has_more_bytes, remaining_x ]*\n    OP_SWAP \n    OP_DUP OP_TOALTSTACK // Save message_byte for lower nibble\n    <4> OP_RSHIFTBIN OP_BIN2NUM // [[ upper_j_end ]]\n    OP_SWAP // *[ ... upper_step_init ]*\n    OP_TOALTSTACK\n    /**\n     * Input: *[ ... I_and_q, i, upper_j_end | alt: ... upper_step_init ]*\n     */\n    <0x0d>\n    OP_INVOKE // *[ signature_slot, I_and_q, i | alt: ... upper_sig_part ]*\n    OP_1ADD // [[ i_lower ]]\n    OP_FROMALTSTACK // [[ upper_sig_part ]]\n    OP_ROT\n    OP_ROT\n    OP_FROMALTSTACK // *[ ... message_byte ]*\n    <0x0f> OP_AND OP_BIN2NUM // [[ lower_j_end ]]\n    OP_FROMALTSTACK \n    OP_FROMALTSTACK // Top: *[ signature_slot, upper_sig_part, I_and_q, i_lower, lower_j_end, remaining_x, has_more_bytes | alt: remaining_message_hash ]*\n    OP_IF\n        <32> OP_SPLIT // [[ lower_step_init, remaining_x ]]\n        OP_TOALTSTACK OP_TOALTSTACK\n        /**\n         * Input: *[ ... I_and_q, i_lower, lower_j_end | alt: ... lower_step_init ]*\n         */\n        <0x0d>\n        OP_INVOKE // *[ signature_slot, upper_sig_part, I_and_q, i_lower | alt: ... lower_sig_part ]*\n        <0> // [[ continue_loop ]] We'll feed this to OP_UNTIL, need it here for the 2ROT\n        OP_FROMALTSTACK // [[ lower_sig_part ]]\n        OP_2ROT\n        OP_ROT // *[ I_and_q, i_lower, continue_loop, signature_slot, upper_sig_part, lower_sig_part ]*\n        OP_CAT // [[ both_sig_parts ]]\n        OP_CAT // [[ signature_so_far ]]\n        OP_2SWAP // *[ continue_loop, signature_so_far, I_and_q, i_lower ]*\n        OP_1ADD // [[ next_i_upper ]]\n        <3> OP_ROLL // *[ signature_so_far, I_and_q, i_lower, continue_loop ]*\n    OP_ELSE\n        OP_FROMALTSTACK // By design: don't pollute alt (even if it works for most use cases and saves a byte)\n        // Remaining_message_hash and lower_j_end are now verified 0, but remaining_x could be longer due to malleation:\n        // Top: *[ signature_slot, upper_sig_part, I_and_q, i_lower, lower_j_end, remaining_x, remaining_message_hash ]*\n        OP_CAT\n        OP_CAT // If remaining_x was 0, this [[ should_be_zero ]]\n        OP_NOT // Assert that should_be_zero is 0 (consumed by OP_UNTIL)\n    OP_ENDIF\nOP_UNTIL // *[ signature_slot, upper_sig_part, I_and_q, i_lower ]* \nOP_2DROP \nOP_CAT // [[ quantum_signature ]]",
+      "tests": {
+        "test_signature_generation": {
+          "check": "OP_SIZE <2144> OP_EQUALVERIFY\n<0x552015bd3e70f7797fafa92d6aa96eeb1d20c5765d8f51853d99e3bfff3c48ce993e4d9bdcd5ef0846beba8cbdf46fce20e110aeec44caeab6fecb73d99239231f0f5317f7a783a4429254d6b8907946755b14edbdf5ee5a352020bf38c5373ba38fd0e67eb7a5276686cfc9fe8cd3e21ba142e88cec65c554dd2778297e3e9c681f33fa6fca58649432516b1cc82c0b52ac5a0aba7eb5f02430b39c2e9c680507a584e201ae89bbbeb2a4463cec235bf16ce7ea4d2b20aa766c1ff8ebc32fcc9d8647915f53191168079b288e65380350c7b69eca6a332fc69a7575e3fa16f5a2a623f6f941aeee39972e86356c2974778140d8ab5aed264297f62f950cd068b95d09e0757a8c7c9c1eefdf036ea8dc31f8dd2a03bbb1007fa15fe3addabd5d29608c1c19ba2db952d7e97853e9bb4d64d4745ddbe59c7bcce78eaf9a6a6c8850e63e16fdb447010b01f388bde5f001425f8a7bb974ee6a86f5697708af044b8d7da70fc8ef0697822fd190120e634a8dd732d83eb5853eb3df54f4fc0e838e967e9551698d36bf2a037ed1c4ba3270a079aae784845d1112a93ad5e20a60ded4046fd5d0f67dc933c85bec4baf93c49ba5a460484b5568f26c4ee54cdc11b49317d6a1c23ddc4f324ff001718f8906264d49d8900a6a51f42dad42ee9591fcf743efd1782954dc57600618821aeb7d6b37e59c9dcee0c80d35f4be265a9d3061899eb7ed3c2ef35287daa2facd233c6a9b491764216411d387851a3c4b2ae673922822cdcdc66285dcbbffd2eabe502ffe199654f3cc98fde6b3234add60cff9d60271b1959e0d5a92e589124e1070a0c7fa90b6853f028640569c00b26aa76ee7d372c4e4c1d5b50576aa17c3d37eb453eadce3756010caef606c77cae01549ce634ff3da23b5b0567d398ddddffda0267c81b30af912c66ab2bb7f3e378c6da86a599a2f00bc9dc09cc7dad9940eea4f2e2f82a50755c535e17dff31d0911f5055d5e09deb52a44f083fa7f2a79ef7f5168a5244b6581f5862817268811c8a01048d4f74bcb786ac1fa777944951440619bce2d5157d3eedcb086cdd2692398b92e4f4a23544aa376970cf3b2be9b3693c5a1eddf8c4372c50b5dd03b077b6fa941d763431f8a96c65d5a8755487b2bc6c20c5b5a5f25f8943c825045fddd3273f87f077b53e66e5035671a9f37d97310eb7cb888de9f10c484beee6f1e9044b0ee22c4004e498eec5566ffbcad1c029f8f6aa768eb8da0045a17f3ccd924d30f195fed20aec4c4e2860f13470e796d296e8a0e897289bcf303ab5db4947487cbc1c54cbdc04505485cb5ebc55cfc0336a62502baa7d8dae2c9f7f2588f27c21fe3bdd0b6e92e857be306f5e0e6c77a900a7cd5b86bead3698c12f1ebb4a183ea47fb42cc8f11857c7a45a9a3ab44682b7bf36674e8b7cfd9ae4b6e0aa4951b04ed42ac76035b356b7cd92df79f320d36053a401a9d70ea0a6f587142a35d1a5dcf77c94e3e0f511f13239486b89e3d12ad61195ff048e76a9948b0a178a91fc9ed81b6f07b14c3488f7c87b986a6d16f63598629fea1c78fefe1f1805a97cd27e20b90d4fee642a6d901a6160842e23507a5cd3f8befc98136133e703c14e9ed6a20bd138c7e0af9bca340f718fad53f109202ec15c494df621d723c756d532fea1c4dbd32532e203c9e8bcb4def99138798eff93c8e8b45ec699b6ae4a40a8d81f8404e2cd7f12b61ccec6e6e815cbd00ad544a3072d2b39fa5de3a3517266ddcf11f5eae7f75c1ae3429ab8109e148f7742afc6a9a1bc8a5547a5c5cac85eac7246a5d4e26440cbf4142f66b91a478b39fca733ce9e59792e21223e4cb16f3afd9669e45f61fd74309b9f6b13454a05e8a354dc717f1e513f619e2f326821622ea6b23738a41959c8c20567656b9290fb153cb5ff65567f28e8a89017c5754d26dda4e29de97360b1d45afef923f83724ab577585d2389f25b4573151c24035e7436d13bc432430c0a5403eaa807d71def9ea3ee4243cec5cbac90501c609bdcaf1c0e458c99dba2c12568ad082778d8e3ba834f28068052ad12d53c078ae7996adffa89231389bd023ead59b4718363660a8fc6fa163ac206b052356f100866801e292af77a81ac1402ebdd7af6ab0b63677a6ea3dee32204b395321e86b979bdd295a1811b15113efb690e50766f55157b1f35963813e3847f2d9001b76dfd5bbaddae5a72c91572253705a120f695510cf8127143790f299a124f614e489208d5b77f93c9a121092d439f2904ba3771278412815af72804d34e5834fc4080d41c893759256b4b2bf022bcf74320b97b59d97b86e72ce58f7b0709528a3fa99acb9f5ec679a68c072b4e797ceea170a9840343cdab294302bbae2f3dcefc903adf2267210fce3e4a0c0bdcf9f52ad76a9a09fa288c78e0842d0c82c82b0b93a51ef56bf4dd66aeadf9238f104514f1d714dd3b863089e470ff474794b7e6e478d5a0095970e0ab488543569931e16152f6e7ccd83240e06cde70dc3f244a201e1690f6823b9c3e6989f2c99cb448f079737b0baab4fa2ea24e149136db8caedf9d120d93fdf23d218d0d8c29771deb7747b338e95677584c30db9a7c85f622d29d2fa44c308083166451871e68be0173e48ceafcb35d87a7307c13ada5be013be6c8b3d294fd6e1db3d1b834305177d1c49dbdd8cabdd61c92feab6085da31319984c58d9b0be66008ba7a5a33251d4390dffb295cb601f7ecce54c79e381258d6fae76a9c488a30106e68a9b0aeeaad08ad83f22ce9a70f733f10cc210a488e17029c4c8f713c481d53ba6a9f69d0df9fc064c36e547bad6c164963d31a971262b85e60ad6b0ce8f25b28d91a3d1fb679dca7e8b80bd2ad0f76e763b6cf2a4cb8d4a226bfc002e073f6760fb806725c550e97c6d89b15929bf84014ef78c09d0e2e6ec8301a3ded2531daf0fe1d863a6fea0ae9e21642e315afccfa071cc56a77e2a7fb28773fa978684353bc9e8f6e9181c70811ea3bc717f87a2>\nOP_EQUAL",
+          "name": "Test Signature Generation",
+          "setup": "/**\n * Verify signature generation matches RFC 8554 with\n * a known-answer test.\n */\n<0xf84c9039770402b34f9ede799d8c42bd5a870d5fada473a76d268b3d0549f3d6f558df0d9544266319478324dc59fec0a719dea939639a5fc72e5e56bd8f704ec50c64288047246553bd8d707e06ac58984b883e1f2d2066fa6435b6aa9bf79c629f25ac346dc1cf34cbff02ffc177f01c76d35cee41a285ce70ae3a70a0172d7c845c009fd85aa69b082b36775bab52725a636ac9a8bd01ad26b0de18c2cf45cf8c2dff6c16745be9308670ce613a81d3bf2b479165b5f25da416e2183474d7bdfdd9e164337b71cf5e68046618e1a0011e55809530e2f2a76e0a413baf1d70fdfee76dd2a751b5eee9968a47c8c3ef5c39188e12a4d432fb5977fc8d7694725e315fbeae91f6b36594bb7100fa618d5dbf202e20a7136080951fa53fcf8949462dd2e79bd8f29ef57d879db0467d56c9b1d2285b7f2d2012eb85e4a61f042fef7beae86fc042b440155508eecc5ecb2f139de2967b26b19fe93059f50f1c358d7da70fc8ef0697822fd190120e634a8dd732d83eb5853eb3df54f4fc0e838e585f6e811b6fd0658d4b7226e8caab6698b0f0e54e357a874d58492da4e07f9ebea20adf202552e69fc4ae0d0b77d57f1222a6beb14f56214142262cccb03b64b16b782e1dfb3c9e9ed905d89bffde0d1c2f87be083a1963fb074e775d634c7860595593a5b0418ad6f7a9e7b3ad29f405929568106de72f87082ed4335bbf8b39c959159a35397273bd51bcc03a6421b363fcb30707926a4a5c7331fae271bda6fb4a22aa84a51ca13c75ba48f8fa08475c1e90fda0aa1f1b28c397aebf0e3494f5f1d96bb2e252655c68b566a2a4d6df6b1105452e513f9c03a42b37303492ac2f0e7237115d17c9f3bee9317e91596e136067a6d2004d545a52c1aabac6d0c72c5d1ad63ed6bb7bd451eaa5083e43553bb1c55eb1f1e400d2f7f85ca154002ed000eb1c1f1faa3c4021858f914e320af5faa3e10feb571fbbf23b1c72f7d73935b081dd6aab64f51bc6769f71a98165ce903bba700e58108daabce2fefdb7ff03d5389834d2ea3f16382d32653c92fdb38691c89302ad4de6f12545a48f43398b92e4f4a23544aa376970cf3b2be9b3693c5a1eddf8c4372c50b5dd03b077305e3a2e13c4bbc514438960d74de37d72ab887e8bcb5d22ff71077ff57281b37b9b9c0c614f80b5e916ab1421d83fd12e98a82e4b283a56b2620f1bde5961e7fbd5536d415bd4d072452277d767ba674e231444eaf1145f8afc2dbb5049c61e40cddaef39d8b2c56d3eb3f58912b2a2f2c9146442ccf08d83a20bfe3d3633abd8c33e18fd810f065e9aa385e50ec1ac04149516cee82cda0e308ac2f7c3fdac3ba3678e5313e26e810572275b628c03e4006f45602ab3ba041f95017616e3368c798862485b20e97818314a307bb605d234814d3c10d78bb868823beaa1d1dd301437071dd66da31f85ef768588efc41615726a49af242082fbc38bbba3a3ce56356f5de648feaf9dbb10652b9e3ba837f877a1af6d2109b1bdd1b35fe35d6647269f9646e7e487a09027cf9ddb2f92621310b94d746271af23a9a42aebe121497e96fa82c54bcd8e81864e76f9ed6f5bb7099066314b16430a27f183ca5b5cdae4d856375733270180f5a25198c1f7938103ba06debd1986d9b603d794df79ce57069ad812abcccdbee201ee88b2b0ae67cd46e97c8a9e318e3a2c5ce3b385562329021d7c19d8f0c411d546525a83eea69e950da644b015e87e4f0212ba2cc93c820095f2af08d94c4ac828836ca772b96577ef71b561fcc6dd5d7a87183eefff199bcdc2bf5b1819838eedf122cb6857bc143458889a63234e438fb80caf1560424b27a6df425c6dee1802b80d4efa42d29e504429479452394816b92ccf84845f820bdae17657f92c770a2ae83d882098712768c62139655ecc0ab209cd1bc3998de8ba66882bb31d4ecb100a6f5c78525d4e5ad534b5f88cae559011b34510e197053655682029df0ccb90142317bc52f2a20ca7e8bbb068cb3b0544586fe903ce06dd4bf79a65ce1584076c68d9ad05d7f514b7f00b0db6aaa9a1f9cb9ac1c06ae8cec0adf8da1584808f5466260f97d62a79c31d7ac74ea682946486c0b02c01fa9a02fbeacc82018d214b62a0692a6836dcefdbe9806c8782996abcd275f84322212c1b105b3b00d461676e94aca77fae837203d856c95135459527dc7b4011a5c442be06b15be670ce4ef87dfb36b553a69ebda476987f3c44af11f57ad85de59dd85e6f9f4b46e741679942f9688eb9b4ff2ad7361f584af6476065df1e984c41de5d88a1baefd32cc117c9f5ca2c76e0514f2124f6ecb212c5c6ce7689e511d884990975a0d7802172e7316a9b63ac1e86e8ac60d22e5d660ec7da6b13546fdc072a64d915c69cbbdfaad30baca439d6ee9299ca2a9dd4f6b09044fb7b238551e093717b02298320716e990beab5624613451ca1e1900b15219a50f7a7665526c10f0631415059bb2fe72fc7f8cae8d6a1df91d325de4d2e3154a1dda109fd6244b6b2b951e2f143651d5b102d2e647aa6c7b3a6c0e6e08ddc0aa845459671b1676e7cb5d3dd0dfed774b313c091dbca8e28a22c4fd52fb2f8fca1132a15f1f30511cd7541edfa76bddc36191004706949d98a834389ccab1187eeb06bf52a69d7ad699491eb7d15283a8ebfe194a286932837c8a361ea34aa4722e77bdd48be1c99d73f7a60c07c36bd42b6c154e48a1c20f1d9f85bccfa799383c19c4740502b8a969ef811b259fd2fabf8d35390787135710de594777d0846609eb7a1c9f5c07c23a4f2e9beb2d22420b76a8a3b941631417f410a15bf709671d985f4f7902a2bfc1566f766d3ea8d266884cae77c650252394b7366deb2a392b639256a12f8bceb0324dc88373fb7dcbbf8dd8efed5aff9f2223dec392942d6d63ed4574eef3ae67cd4b53bee93f8b59b80197183481226df4cb11f6c68028ed107064a81ef532dff8842e14b6252064a678b6ee291166bdc916df81e87fe> // quantum private key [[ x ]]\n<0xd08fabd4a2091ff0a8cb4ed834e74534> // [[ I ]]\n<0> // [[ q ]]\n<0x2773ae45f3d3a711b3067d51f539eb7c1e9e6a0ea44893d4c73ff926c14a691d> //  [[ C ]]\n<0x6578616d706c65> // [[ message ]]\n\n"
+        }
+      }
+    },
+    "quantum_lock_serialize_transaction": {
+      "name": "Quantum Lock: Serialize Transaction",
+      "script": "/**\n * Script used to construct the commitment to the current\n * transaction, preventing malleation in the mempool\n * (even by a fast quantum attacker).\n * \n * This particular demo produces a concatenation of:\n * - **The spent outpoints**: for better air-gapped support\n *   (essentially a partial SIGHASH_UTXOs to ensure that an\n *   offline wallet doesn’t need any further chain state to\n *   double-check the transaction it’s signing.)\n * - **The outputs**: to prevent any modifications to the\n *   outputs by an attacker.\n * \n * Note that this script could save ~30 bytes with some\n * sort of: `<all_outputs_all_utxos> OP_SIGHASH`, but more\n * research is required. A more general \"detached signature\"\n * structure (and matching introspection opcode)\n * might be more widely useful – saving more bytes in more\n * cases, as well as simplifying malleability prevention.\n */\nOP_TXINPUTCOUNT // Lock down the count, too.\nOP_TXINPUTCOUNT\nOP_BEGIN \n    OP_1SUB // the next index to aggregate\n    OP_DUP\n    OP_OUTPOINTTXHASH\n    OP_OVER\n    /**\n     * Could probably trim off the padding here and rely on the\n     * second-preimage resistance of OP_HASH256, but would\n     * technically imply less than 128-bit quantum security given\n     * Grover's algorithm, so we do the safe thing and just pad it.\n     */\n    OP_OUTPOINTINDEX <2> OP_NUM2BIN\n    OP_CAT\n    /**\n     * This efficient concatenation approach happens to leave items in\n     * reverse order, with OP_TXINPUTCOUNT at the end. Either way\n     * is fine, we just want to minimize on-chain validation bytes.\n     */\n    OP_ROT OP_CAT\n    OP_SWAP\n    OP_IFDUP\n    OP_NOT\nOP_UNTIL \n/**\n * Locking down the outpoint hashes here offers some defense in depth\n * (esp. if the output digest approach below is ever modified).\n */\nOP_SHA256 // [[ hash_outpoints ]]\nOP_TXOUTPUTCOUNT\nOP_TXOUTPUTCOUNT\nOP_BEGIN \n    OP_1SUB // the next index to aggregate\n    OP_DUP\n    OP_2DUP\n    OP_2DUP\n    /**\n     * Pre-hashing the most variable-length fields is ideal in that\n     * it both ensures a fixed width in the final commitment\n     * (preventing window-sliding malleation) and eliminates any variance\n     * in the number of outputs which can be concatenate in a single stack\n     * item, improving predictability and support for unusual output types.\n     */\n    OP_OUTPUTBYTECODE OP_SHA256\n    OP_ROT\n    OP_OUTPUTVALUE <8> OP_NUM2BIN\n    OP_ROT\n    /**\n     * Particularly important to fix the width, can vary between 0 and\n     * 33 bytes.\n     */\n    OP_OUTPUTTOKENCATEGORY <33> OP_NUM2BIN\n    /**\n     * Concatenate what we have so far.\n     */\n    OP_CAT OP_CAT\n    OP_ROT\n    OP_OUTPUTTOKENAMOUNT <8> OP_NUM2BIN\n    OP_ROT\n    /**\n     * Again, pre-hashing improves predictability and support.\n     */\n    OP_OUTPUTTOKENCOMMITMENT OP_SHA256\n    OP_CAT OP_CAT\n    /**\n     * Concatenated all details for this output, now append it\n     * to the last round's concatenation (again, reverse order\n     * is a bit more efficient here).\n     */\n    OP_ROT OP_CAT\n    OP_SWAP\n    OP_IFDUP\n    OP_NOT\nOP_UNTIL \nOP_SHA256 // [[ hash_outputs ]]\nOP_CAT OP_SHA256 // [[ serialization_hash ]]\n",
+      "tests": {
+        "test_serialization": {
+          "passes": ["aggregated_spend_slot_0"],
+          "check": "OP_DEPTH <1> OP_EQUALVERIFY\nOP_SIZE <32> OP_EQUAL OP_NIP",
+          "name": "Test Serialization"
+        }
+      }
+    }
+  },
+  "supported": ["BCH_2026_05", "BCH_SPEC"]
+}
