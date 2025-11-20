@@ -60,9 +60,7 @@
     "Winternitz"
   ],
   "flagWords": [],
-  "ignorePaths": [
-    "./cspell.json"
-  ],
+  "ignorePaths": ["cspell.json"],
   "patterns": [
     {
       "name": "cash-address-format",

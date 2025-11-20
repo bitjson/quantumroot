@@ -8,7 +8,9 @@ For more information, see the full Quantumroot post:
 
 [Quantumroot: Quantum-Secure Vaults for Bitcoin Cash (bitjson.com) &rarr;](https://blog.bitjson.com/quantumroot)
 
----
+## Transaction Generation Demo
+
+Demo wallet integration code can be found in [`demo.ts`](./test-suite/demo.ts). For details on the [demo transactions](./test-suite/demo/), see [`Post-quantum vaults are live on Bitcoin Cash's Chipnet`](https://blog.bitjson.com/quantumroot-on-chipnet/).
 
 ## Example Transactions
 

@@ -3,7 +3,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@bitauth/libauth": "^3.1.0-next.6",
+        "@bitauth/libauth": "^3.1.0-next.8",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -15,7 +15,7 @@
     },
   },
   "packages": {
-    "@bitauth/libauth": ["@bitauth/libauth@3.1.0-next.6", "", {}, "sha512-FJ4ZChczVx779T6yElNGV1pWuyN4+mwF7P6ro+eFt5g6GPKqJe4S7YYBJySRGyER2CvTVnmx0gArzSbp/2u3oA=="],
+    "@bitauth/libauth": ["@bitauth/libauth@3.1.0-next.8", "", {}, "sha512-Pm+Ju+YP3JeBLLTiVrBnia2wwE4G17r4XqpvPRMcklElJTe8J6x3JgKRg1by0Xm3ZY6UFxACkEAoSA+x419/zA=="],
 
     "@types/bun": ["@types/bun@1.2.16", "", { "dependencies": { "bun-types": "1.2.16" } }, "sha512-1aCZJ/6nSiViw339RsaNhkNoEloLaPzZhxMOYEa7OzRzO41IGg5n/7I43/ZIAW/c+Q6cT12Vf7fOZOoVIzb5BQ=="],
 
